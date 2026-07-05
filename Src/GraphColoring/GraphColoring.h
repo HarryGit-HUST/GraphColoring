@@ -9,8 +9,6 @@
 #define CN_HUST_SZX_NPBENCHMARK_GRAPH_COLORING_H
 
 
-#include "Util.h"
-
 #include <array>
 #include <chrono>
 #include <functional>
@@ -45,53 +43,56 @@ using NodeColors = std::vector<ColorId>; // `NodeColors[n]` is the color of node
 // best known solution recorder and reference checker implementation.
 class GraphColoringTester {
 public:
-    struct Status {
-        // objective value.
-        ColorId colorNum;
-        // constraint violations.
-        NodeId nodeNumDiff;
-        EdgeId conflictEdgeNum;
-    };
+	struct Status {
+		// objective value.
+		ColorId colorNum;
+		// constraint violations.
+		NodeId nodeNumDiff;
+		EdgeId conflictEdgeNum;
+	};
 
 
-    GraphColoringTester(const GraphColoring& input) : gc(input), bestObjVal(input.nodeNum) {}
+	GraphColoringTester(const GraphColoring& input) : gc(input), bestObjVal(input.nodeNum) {}
 
 
-    // call this method each time you find a better solution.
-    // return true if the best known solution is updated.
-    bool reportNewOptima(const NodeColors& output, ColorId objVal);
+	// call this method each time you find a better solution.
+	// return true if the best known solution is updated.
+	bool reportNewOptima(const NodeColors& output, ColorId objVal);
 
-    // check if constraints are satisfied and calculate the objective value.
-    Status check(const NodeColors& output) const;
+	// check if constraints are satisfied and calculate the objective value.
+	Status check(const NodeColors& output) const;
 
-    const NodeColors& getBestSln() const { return bestSln; }
-    TimePoint getReportTime() const { return reportTime; }
+	const NodeColors& getBestSln() const { return bestSln; }
+	TimePoint getReportTime() const { return reportTime; }
 
-    // test the solver on all test cases.
-    static void testAll(const std::string &exeName);
-    static void test(std::istream& inputStream, long long secTimeout, int randSeed, const std::string& exeName, const std::string& instanceName);
-    
+	// test the solver on all test cases.
+	static void testAll(const std::string &exeName);
+	static Status test(const GraphColoring& input, long long secTimeout, int randSeed,
+		const std::string& exeName, const std::string& instanceName, int bestColorNum);
+	static Status test(std::istream& inputStream, long long secTimeout, int randSeed,
+		const std::string& exeName, const std::string& instanceName, int bestColorNum);
+	
 protected:
-    const GraphColoring& gc;
+	const GraphColoring& gc;
 
-    ColorId bestObjVal;
-    NodeColors bestSln;
-    TimePoint reportTime;
+	ColorId bestObjVal;
+	NodeColors bestSln;
+	TimePoint reportTime;
 };
 
 
 // solver interface.
 class GraphColoringSolver {
 public:
-    GraphColoringTester tester;
+	GraphColoringTester tester;
 
-    const GraphColoring& gc;
+	const GraphColoring& gc;
 
 
-    GraphColoringSolver(const GraphColoring& input) : gc(input), tester(input) {}
+	GraphColoringSolver(const GraphColoring& input) : gc(input), tester(input) {}
 
-    // solver entrance.
-    void solve(NodeColors& output, TimeLeft restMilliSec, int seed);
+	// solver entrance.
+	void solve(NodeColors& output, TimeLeft restMilliSec, int seed);
 };
 
 }
