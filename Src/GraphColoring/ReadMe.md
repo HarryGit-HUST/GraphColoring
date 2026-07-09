@@ -70,7 +70,13 @@ tags:
 若总计算时间差距在 $10 |I|$ 秒内, 则提交时间越排名越靠前.
 
 
-## 目录结构
+## SDK
+
+### 下载地址
+
+https://gitlink.org.cn/hust-smart-lab/NPBenchmark-SDK
+
+### 目录结构
 
 - `NPBenchmark-SDK/`: NPBenchmark 测试平台所有问题 SDK 根目录, 也是判题模块的部署目录, 以及算法可执行文件运行的工作目录.
   - `Build/`: 所有问题 SDK 的项目配置文件目录.

@@ -62,6 +62,7 @@ public:
 
 	// check if constraints are satisfied and calculate the objective value.
 	Status check(const NodeColors& output) const;
+	Status check() const { return check(bestSln); }
 
 	const NodeColors& getBestSln() const { return bestSln; }
 	TimePoint getReportTime() const { return reportTime; }
@@ -93,7 +94,7 @@ public:
 	GraphColoringSolver(const GraphColoring& input) : gc(input), tester(input) {}
 
 	// solver entrance.
-	void solve(NodeColors& output, TimeLeft restMilliSec, int seed);
+	void solve(TimeLeft restMilliSec, int seed);
 };
 
 }

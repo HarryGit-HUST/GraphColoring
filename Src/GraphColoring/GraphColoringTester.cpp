@@ -66,7 +66,7 @@ void loadInput(istream& is, GraphColoring& gc) {
 	for (auto edge = gc.edges.begin(); edge != gc.edges.end(); ++edge) { is >> (*edge)[0] >> (*edge)[1]; }
 }
 
-void saveOutput(ostream& os, NodeColors& nodeColors) {
+void saveOutput(ostream& os, const NodeColors& nodeColors) {
 	for (auto color = nodeColors.begin(); color != nodeColors.end(); ++color) { os << *color << '\t'; }
 }
 
@@ -80,7 +80,6 @@ GraphColoringTester::Status GraphColoringTester::test(istream& inputStream, long
 
 GraphColoringTester::Status GraphColoringTester::test(const GraphColoring& input, long long secTimeout, int randSeed, const std::string& exeName, const std::string& instanceName, int bestColorNum) {
 	cerr << "solve." << endl;
-	NodeColors nodeColors(input.nodeNum, -1);
 	GraphColoringSolver gcSolver(input);
 
 	volatile bool* running = new bool(true);
@@ -93,16 +92,16 @@ GraphColoringTester::Status GraphColoringTester::test(const GraphColoring& input
 
 	TimePoint begTime = steady_clock::now();
 	TimePoint endTime = begTime + seconds(secTimeout);
-	gcSolver.solve(nodeColors, [&]() { return Timer::msDuration(steady_clock::now(), endTime); }, randSeed);
+	gcSolver.solve([&]() { return Timer::msDuration(steady_clock::now(), endTime); }, randSeed);
 	*running = false;
 
-	GraphColoringTester::Status status = gcSolver.tester.check(nodeColors);
+	GraphColoringTester::Status status = gcSolver.tester.check();
 
 	if (status.colorNum < bestColorNum) {
 		cerr << "save output." << endl;
 		string slnPath(DataFileDir + instanceName + '[' + to_string(status.colorNum) + ']' + exeName + OutputFileExt);
 		ofstream slnFile(slnPath);
-		saveOutput(slnFile, nodeColors);
+		saveOutput(slnFile, gcSolver.tester.getBestSln());
 	}
 
 	string logPath(LogFileDir + exeName + LogFileExt);
