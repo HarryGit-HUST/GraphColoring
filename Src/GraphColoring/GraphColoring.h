@@ -52,7 +52,8 @@ public:
 	};
 
 
-	GraphColoringTester(const GraphColoring& input) : gc(input), bestObjVal(input.nodeNum) {}
+	GraphColoringTester(const GraphColoring& input)
+		: gc(input), bestObjVal(input.nodeNum), reportTime(std::chrono::steady_clock::now()) {}
 
 
 	// call this method each time you find a better solution.

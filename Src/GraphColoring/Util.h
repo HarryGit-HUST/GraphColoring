@@ -9,6 +9,7 @@
 #define CN_HUST_SZX_NPBENCHMARK_UTIL_H
 
 
+#include <atomic>
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -59,7 +60,7 @@ struct Timer {
 	}
 };
 
-struct JobFighter {
+struct JobFighter { // lock-free thread pool for homogeneous tasks.
 	using IsJobTaken = std::function<bool()>;
 	using Job = std::function<void(IsJobTaken isJobTaken)>;
 

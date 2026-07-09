@@ -1,17 +1,21 @@
 ---
-title: SmartLab Challenge 2020 - Graph Coloring
-date: 2020-12-09 10:28:35
-categories:
-- 算法挑战
+title: 图着色问题
+date: 2020-12-09
 tags:
-- Challenge
-- 算法挑战
-- 组合优化
+- NP问题
+- 图论
 ---
 
 
 
-# 图着色算法训练
+# 问题概述
+
+给定一个无向图, 请为每个节点染一种颜色, 在任意一条无向边两端的节点颜色不同的情况下, 最小化使用的颜色数.
+
+
+# 问题详情
+
+## 问题背景
 
 图着色问题在众多领域中有广泛的应用, 可以用来对各种各样的组合优化问题进行建模.
 图着色问题主要研究独占资源的分配问题.
@@ -23,13 +27,10 @@ tags:
 高效的图着色问题求解算法具有极其重要的理论与应用价值.
 
 
-## 问题概述
+## 参考文献
 
-给定一个无向图, 请为每个节点染一种颜色, 在任意一条无向边两端的节点颜色不同的情况下, 最小化使用的颜色数.
-
-- 参考文献.
-  - [1] Z. Lü and J.-K. Hao, “A memetic algorithm for graph coloring,” European Journal of Operational Research, vol. 203, no. 1, pp. 241–250, 2010, doi: 10.1016/j.ejor.2009.07.016.
-  - [2] L. Moalic and A. Gondran, “Variations on memetic algorithms for graph coloring problems,” Journal of Heuristics, vol. 24, no. 1, pp. 1–24, 2018, doi: 10.1007/s10732-017-9354-9.
+- [1] Z. Lü and J.-K. Hao, “A memetic algorithm for graph coloring,” European Journal of Operational Research, vol. 203, no. 1, pp. 241–250, 2010, doi: 10.1016/j.ejor.2009.07.016.
+- [2] L. Moalic and A. Gondran, “Variations on memetic algorithms for graph coloring problems,” Journal of Heuristics, vol. 24, no. 1, pp. 1–24, 2018, doi: 10.1007/s10732-017-9354-9.
 
 
 ## 提交要求
@@ -53,6 +54,16 @@ tags:
     - 可伸缩 (数据结构可以根据算例规模动态申请内存, 而非根据预先指定的编译期常量进行内存分配).
 
 
+## 评分规则
+
+设算例集为 $I$.
+算例 $i \in I$ 上所有解题者求得的最优解目标函数值为 $b(i)$.
+算例 $i \in I$ 上当前解题者求得的最优解目标函数值为 $o(i)$.
+则算例 $i \in I$ 上当前解题者与所有解题者的最优解目标函数值差距为 $g(i) = |o(i) - b(i)|$.
+设单个算例 $i \in I$ 得分为 $f(i)$.
+另设衰减参数 $t$, $e$ 为自然对数, 则 $f(i) = 1 - e^{-t \cdot g(i)}$.
+
+
 ## 目录结构
 
 - `NPBenchmark-SDK/`: NPBenchmark 测试平台所有问题 SDK 根目录, 也是判题模块的部署目录, 以及算法可执行文件运行的工作目录.
@@ -64,10 +75,10 @@ tags:
   - `Src/`: 源代码.
     - `GraphColoring/`: 图着色问题的 SDK.
       - `ReadMe.md`: 本文件.
-      - `Main.cpp`: (**无需理解本文件内容**) (**模板文件不可修改**) 程序入口 (`main()` 函数).
-      - `Util.h`: (**无需理解本文件内容**) (**模板文件不可修改**) 批量测试的常用工具函数库, 算法不应包含此头文件.
-      - `GraphColoringTester.cpp`: (**无需理解本文件内容**) (**模板文件不可修改**) 数据文件解析, 结果检查, 批量测试.
-      - `GraphColoring.h`: (**重点理解本文件内容**) (**模板文件不可修改**) 图着色算法的关键数据结构与接口定义.
+      - `Main.cpp`: (**无需理解本文件内容**) (**提交后将被模板文件覆盖**) 程序入口 (`main()` 函数).
+      - `Util.h`: (**无需理解本文件内容**) (**提交后将被模板文件覆盖**) 批量测试的常用工具函数库, 算法不应包含此头文件.
+      - `GraphColoringTester.cpp`: (**无需理解本文件内容**) (**提交后将被模板文件覆盖**) 数据文件解析, 结果检查, 批量测试.
+      - `GraphColoring.h`: (**重点理解本文件内容**) (**提交后将被模板文件覆盖**) 图着色算法的关键数据结构与接口定义.
       - `GraphColoring.cpp`: (**重点理解本文件内容**) 解题者编写图着色算法的入口, 提供示例求解算法代码.
         - 解题者可自行修改此文件, 但必须实现 `GraphColoringSolver::solve()` 函数, 否则将导致编译错误, 测试无法通过.
       - 解题者可自行添加的文件和目录.
