@@ -95,6 +95,7 @@ public:
 
 	// solver entrance.
 	void solve(TimeLeft restMilliSec, int seed);
+
 };
 
 }
