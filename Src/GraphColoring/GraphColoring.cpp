@@ -128,7 +128,6 @@ static int partialColSearch(
 	}
 
 	// ---- 3. tabu table & search state ----
-	// tabu[n][c] = iteration until which assigning color c to node n is forbidden
 	vector<vector<int>> tabu(gc.nodeNum, vector<int>(k, 0));
 	int iter = 0;
 	int bestUncolored = uncoloredCount;
@@ -145,12 +144,10 @@ static int partialColSearch(
 		NodeId bestU = -1;
 		ColorId bestC = -1;
 
-		// evaluate all (uncolored-node, color) pairs
 		for (NodeId u : uncoloredNodes) {
 			for (ColorId c = 0; c < k; ++c) {
 				if (tabu[u][c] > iter) {
-					// aspiration: a cost-0 move (greedy fill) always accepted
-					if (adjColorCount[u][c] > 0) continue;
+					if (adjColorCount[u][c] > 0) continue; // aspiration: cost=0
 				}
 				int cost = adjColorCount[u][c];
 				if (cost < bestCost) {
@@ -160,53 +157,39 @@ static int partialColSearch(
 				}
 			}
 		}
-		if (bestU == -1) break; // all moves tabu
+		if (bestU == -1) break;
 
-		// ---- execute move (bestU, bestC) ----
-		// step A: uncolor all neighbors of bestU that have color bestC
+		// ---- execute move ----
 		sln[bestU] = bestC;
 		for (NodeId v : adj[bestU]) {
 			if (sln[v] == bestC) {
 				sln[v] = -1;
 				uncoloredNodes.push_back(v);
-				// v lost its color → its neighbors lose one adjColorCount entry
 				for (NodeId w : adj[v]) {
 					--adjColorCount[w][bestC];
 				}
-				// tabu: prevent immediately re-assigning bestC to v
 				tabu[v][bestC] = iter + randBetween(1, 12)
 					+ static_cast<int>(0.6 * uncoloredCount);
 			}
 		}
-
-		// step B: bestU is now colored → its neighbors gain one adjColorCount entry
 		for (NodeId w : adj[bestU]) {
 			++adjColorCount[w][bestC];
 		}
 
-		// step C: update uncolored set
-		// bestU was uncolored, now colored → -1
-		// each kicked neighbor was colored, now uncolored → +1 each (= bestCost)
-		// net: +bestCost - 1
 		uncoloredCount += bestCost - 1;
 
-		// remove all colored nodes from uncoloredNodes
 		{
 			size_t write = 0;
 			for (size_t i = 0; i < uncoloredNodes.size(); ++i) {
 				NodeId n = uncoloredNodes[i];
-				if (sln[n] < 0) {
-					uncoloredNodes[write++] = n;
-				}
+				if (sln[n] < 0) uncoloredNodes[write++] = n;
 			}
 			uncoloredNodes.resize(write);
 		}
 
-		// tabu on bestU: prevent changing its color for a while
 		tabu[bestU][bestC] = iter + randBetween(1, 12)
 			+ static_cast<int>(0.6 * uncoloredCount);
 
-		// track best
 		if (uncoloredCount < bestUncolored) {
 			bestUncolored = uncoloredCount;
 			lastImproveIter = iter;
@@ -462,11 +445,7 @@ static bool islandHEA(
 
 			int islandBest = INT_MAX;
 			for (auto& ind : pop) islandBest = min(islandBest, ind.uncolored);
-			// three-tier budget: deep only when within striking distance
-			int budget;
-			if (islandBest <= 5)       budget = 0;    // full depth — almost there
-			else if (islandBest <= 20)  budget = static_cast<int>(gc.nodeNum * 20);
-			else                        budget = 3000;  // very light — just scout
+			int budget = (islandBest < 30) ? 0 : static_cast<int>(gc.nodeNum * 250);
 
 			int childUncolored = partialColSearch(child, k, gc, adj, restMilliSec, rand, budget);
 			if (childUncolored == 0) { currentSln = child; return true; }
