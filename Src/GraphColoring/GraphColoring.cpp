@@ -396,6 +396,124 @@ static bool HEA(
 
 
 // =========================================================================
+//  IslandHEA — Island Model HEA for large/hard graphs
+//    4 independent small populations ("islands") evolve in parallel.
+//    Every MIGRATION_INTERVAL generations, best individuals migrate
+//    to neighbor islands (ring topology). Isolation replaces diversity
+//    guard and perturbation restart with natural exploration.
+// =========================================================================
+static bool islandHEA(
+	int k,
+	vector<ColorId>& currentSln,
+	const GraphColoring& gc,
+	const vector<vector<NodeId>>& adj,
+	TimeLeft restMilliSec,
+	mt19937& rand)
+{
+	auto randBetween = [&](int lb, int ub) {
+		return uniform_int_distribution<int>(lb, ub - 1)(rand);
+	};
+
+	const int NUM_ISLANDS = 4;
+	const int POP_SIZE = 5;              // per island (total 20 individuals)
+	const int MIGRATION_INTERVAL = 5;    // frequent migration with light search
+
+	struct Individual { vector<ColorId> genes; int uncolored; };
+	vector<vector<Individual>> islands(NUM_ISLANDS);
+
+	// ---- init each island with different perturbation strength ----
+	int perturbRates[4] = { 2, 3, 4, 5 };
+	for (int i = 0; i < NUM_ISLANDS && restMilliSec() > 0; ++i) {
+		for (int j = 0; j < POP_SIZE && restMilliSec() > 0; ++j) {
+			Individual ind;
+			ind.genes = currentSln;
+			for (NodeId n = 0; n < gc.nodeNum; ++n) {
+				if (randBetween(0, perturbRates[i]) == 0) {
+					ind.genes[n] = randBetween(0, k);
+				}
+			}
+			ind.uncolored = partialColSearch(ind.genes, k, gc, adj, restMilliSec, rand,
+				static_cast<int>(gc.nodeNum * 100));
+			islands[i].push_back(ind);
+			if (ind.uncolored == 0) { currentSln = ind.genes; return true; }
+		}
+	}
+
+	int gen = 0;
+
+	// ---- main loop: round-robin over islands ----
+	while (restMilliSec() > 0) {
+		for (int i = 0; i < NUM_ISLANDS && restMilliSec() > 0; ++i) {
+			auto& pop = islands[i];
+
+			// tournament selection (local to this island)
+			auto tournamentSelect = [&]() -> int {
+				int a = randBetween(0, POP_SIZE);
+				int b = randBetween(0, POP_SIZE);
+				return (pop[a].uncolored <= pop[b].uncolored) ? a : b;
+			};
+
+			int pi1 = tournamentSelect();
+			int pi2 = tournamentSelect();
+			while (pi1 == pi2) pi2 = randBetween(0, POP_SIZE);
+
+			// crossover + local search (light for exploration, deep only when close)
+			vector<ColorId> child = GCPX(pop[pi1].genes, pop[pi2].genes, k, gc, adj, rand);
+
+			int islandBest = INT_MAX;
+			for (auto& ind : pop) islandBest = min(islandBest, ind.uncolored);
+			// three-tier budget: deep only when within striking distance
+			int budget;
+			if (islandBest <= 5)       budget = 0;    // full depth — almost there
+			else if (islandBest <= 20)  budget = static_cast<int>(gc.nodeNum * 20);
+			else                        budget = 3000;  // very light — just scout
+
+			int childUncolored = partialColSearch(child, k, gc, adj, restMilliSec, rand, budget);
+			if (childUncolored == 0) { currentSln = child; return true; }
+
+			// replace worst in this island
+			int worstIdx = 0;
+			for (int j = 1; j < POP_SIZE; ++j) {
+				if (pop[j].uncolored > pop[worstIdx].uncolored) worstIdx = j;
+			}
+			if (childUncolored < pop[worstIdx].uncolored) {
+				pop[worstIdx].genes = move(child);
+				pop[worstIdx].uncolored = childUncolored;
+			}
+		}
+
+		++gen;
+
+		// ---- migration (ring topology) ----
+		if (gen % MIGRATION_INTERVAL == 0) {
+			for (int i = 0; i < NUM_ISLANDS; ++i) {
+				int dst = (i + 1) % NUM_ISLANDS;
+
+				// find best in source island
+				int bestSrc = 0;
+				for (int j = 1; j < POP_SIZE; ++j) {
+					if (islands[i][j].uncolored < islands[i][bestSrc].uncolored) bestSrc = j;
+				}
+
+				// find worst in destination island
+				int worstDst = 0;
+				for (int j = 1; j < POP_SIZE; ++j) {
+					if (islands[dst][j].uncolored > islands[dst][worstDst].uncolored) worstDst = j;
+				}
+
+				// migrate if source is better
+				if (islands[i][bestSrc].uncolored < islands[dst][worstDst].uncolored) {
+					islands[dst][worstDst].genes = islands[i][bestSrc].genes;
+					islands[dst][worstDst].uncolored = islands[i][bestSrc].uncolored;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+
+// =========================================================================
 //  Main solver entry
 // =========================================================================
 void GraphColoringSolver::solve(TimeLeft restMilliSec, int seed) {
@@ -433,7 +551,10 @@ void GraphColoringSolver::solve(TimeLeft restMilliSec, int seed) {
 					if (randBetween(0, 4) == 0) curSln[n] = randBetween(0, colorNum);
 				}
 			}
-			if (HEA(colorNum, curSln, gc, adj, restMilliSec, rand)) {
+			bool ok = (gc.nodeNum >= 500)
+				? islandHEA(colorNum, curSln, gc, adj, restMilliSec, rand)
+				: HEA(colorNum, curSln, gc, adj, restMilliSec, rand);
+			if (ok) {
 				bestSln = curSln;
 				tester.reportNewOptima(bestSln, colorNum);
 				found = true;
